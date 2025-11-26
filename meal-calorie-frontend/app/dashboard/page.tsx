@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { Suspense } from "react";
 import { Toaster } from "sonner";
 import Header from "@/components/Header";
 import MealForm from "@/components/MealForm";
@@ -9,8 +9,9 @@ import ResultCard from "@/components/ResultCard";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import useRequireAuth from "../hooks/useRequireAuth";
 
-export default function DashboardPage() {
+function DashboardContent() {
   useRequireAuth();
+
   return (
     <div className="min-h-screen p-6 bg-gradient-to-br from-[#e6fff2] via-[#f6fff9] to-[#ffffff] dark:from-[#071018] dark:via-[#0a1b24] dark:to-[#071018]">
       <Toaster position="top-right" richColors closeButton />
@@ -50,5 +51,13 @@ export default function DashboardPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }

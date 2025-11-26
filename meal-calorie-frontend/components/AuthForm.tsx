@@ -154,7 +154,6 @@ export default function AuthForm({ onSuccess, defaultRedirect }: Props) {
           <Checkbox id="remember" checked={rememberMe} onCheckedChange={(v: any) => setRememberMe(Boolean(v))} />
           <Label htmlFor="remember" className="text-sm">Remember me</Label>
         </div>
-        <a href="/forgot-password" className="text-sm text-slate-600 hover:underline">Forgot?</a>
       </div>
 
       <div>
