@@ -7,10 +7,10 @@ import MealForm from "@/components/MealForm";
 import ResultCard from "@/components/ResultCard";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import useRequireAuth from "../hooks/useRequireAuth";
+import useAuthGuard from "../hooks/useAuthGuard";
 
 function DashboardContent() {
-  useRequireAuth();
+  useAuthGuard('/login');
 
   return (
     <div className="min-h-screen p-6 bg-gradient-to-br from-[#e6fff2] via-[#f6fff9] to-[#ffffff] dark:from-[#071018] dark:via-[#0a1b24] dark:to-[#071018]">
@@ -56,7 +56,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense>
       <DashboardContent />
     </Suspense>
   );

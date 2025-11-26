@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
@@ -98,7 +97,11 @@ export default function RegisterPage() {
         timeout: 15000,
       });
 
-      setTimeout(() => router.push("/login"), 900);
+      if(res.status === 200 || res.status === 201) {
+        router.push("/login")
+        return
+      }
+
     } catch (err: any) {
       const resp = err?.response;
       const status = resp?.status ?? null;
@@ -108,9 +111,9 @@ export default function RegisterPage() {
       if (resp?.data && Array.isArray(resp.data.details)) {
         const errs = parseServerDetails(resp.data.details);
         setFieldErrors(errs);
-        const toastMsg = showErrorToast(status, serverMsg);
+        showErrorToast(status, serverMsg);
       } else {
-        const toastMsg = showErrorToast(status, serverMsg);
+        showErrorToast(status, serverMsg);
       }
     } finally {
       setLoading(false);
@@ -184,7 +187,7 @@ export default function RegisterPage() {
                           value={form.firstName}
                           onChange={handleChange}
                           required
-                          className="pl-10"
+                          className="pl-10 placeholder:text-slate-500 dark:placeholder:text-slate-300"
                           style={{ backgroundColor: "rgba(255,255,255,0.6)" }}
                         />
                         <User
@@ -209,7 +212,7 @@ export default function RegisterPage() {
                           value={form.lastName}
                           onChange={handleChange}
                           required
-                          className="pl-10"
+                          className="pl-10 placeholder:text-slate-500 dark:placeholder:text-slate-300"
                           style={{ backgroundColor: "rgba(255,255,255,0.6)" }}
                         />
                         <User
@@ -236,7 +239,7 @@ export default function RegisterPage() {
                         value={form.email}
                         onChange={handleChange}
                         required
-                        className="pl-10"
+                        className="pl-10 placeholder:text-slate-500 dark:placeholder:text-slate-300"
                         style={{ backgroundColor: "rgba(255,255,255,0.6)" }}
                       />
                       <Mail
@@ -262,7 +265,7 @@ export default function RegisterPage() {
                         value={form.password}
                         onChange={handleChange}
                         required
-                        className="pl-10"
+                        className="pl-10 placeholder:text-slate-500 dark:placeholder:text-slate-300"
                         style={{ backgroundColor: "rgba(255,255,255,0.6)" }}
                       />
                       <Lock

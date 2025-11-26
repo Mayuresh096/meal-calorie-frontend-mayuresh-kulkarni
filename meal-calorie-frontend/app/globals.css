@@ -148,6 +148,7 @@
   --sidebar-ring: rgba(167,243,208,0.12);
 }
 
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

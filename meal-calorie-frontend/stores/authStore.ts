@@ -1,43 +1,32 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
-type User = { firstName?: string; lastName?: string; email?: string } | null;
+type User = { first_name?: string; last_name?: string; email?: string } | null;
 
 type AuthState = {
   token: string | null;
   user: User;
-  setAuth: (token: string, user?: User) => void;
-  logout: () => void;
+  isHydrated: boolean;
+  setAuth: (token: string, user: User) => void;
+  clearAuth: () => void;
 };
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       token: null,
       user: null,
-      setAuth: (token, user) => {
-        set({ token, user: user ?? null });
-        try {
-          if (typeof window !== "undefined") {
-            // persist a non-http cookie as fallback so middleware can work if backend can't set HttpOnly cookie
-            document.cookie = `accessToken=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax; ${location.protocol === "https:" ? "Secure;" : ""}`;
-            localStorage.setItem("accessToken", token);
-            if (user) localStorage.setItem("user", JSON.stringify(user));
-          }
-        } catch (e) {}
-      },
-      logout: () => {
-        set({ token: null, user: null });
-        try {
-          if (typeof window !== "undefined") {
-            // remove cookie by setting max-age=0
-            document.cookie = "accessToken=; path=/; max-age=0";
-            localStorage.removeItem("accessToken");
-            localStorage.removeItem("user");
-          }
-        } catch (e) {}
-      },
+      isHydrated: false,
+      setAuth: (token: any, user: any) => set({ token, user }),
+      clearAuth: () => set({ token: null, user: null }),
     }),
-    { name: "meal-calorie-auth" }
+    {
+      name: 'meal-calorie-auth',
+      partialize: (state) => ({ token: state.token, user: state.user }),
+      onRehydrateStorage: () => (state) => {
+        // called after hydrate finished; state is the restored state
+        // we can't call set here directly so we will set isHydrated via a small timeout in the app
+      },
+    }
   )
 );

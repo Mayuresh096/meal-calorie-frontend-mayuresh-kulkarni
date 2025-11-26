@@ -1,51 +1,43 @@
-"use client";
-
+'use client';
+import { useTheme } from "@/app/hooks/useTheme";
+import api from "@/lib/api";
+import { useAuthStore } from "@/stores/authStore";
 import { LogOut, Moon, Sun } from "lucide-react";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React from "react";
 
 const Header: React.FC = () => {
   const router = useRouter();
+  const { theme, toggle } = useTheme();
+  const clearAuth = useAuthStore((s) => s.clearAuth);
 
-  const [isDark, setIsDark] = useState<boolean>(false);
-
-  useEffect(() => {
+  const handleLogout = async () => {
     try {
-      const saved = localStorage.getItem("theme");
-      if (saved === "dark") setIsDark(true);
-      else if (saved === "light") setIsDark(false);
-      else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        setIsDark(true);
+      clearAuth();
+      try {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        localStorage.removeItem("rememberMe");
+        localStorage.removeItem("meal-calorie-auth");
+      } catch (e) {
+        // ignore storage errors
       }
-    } catch {
-      // ignore
-    }
-  }, []);
+      try {
+        if (api && (api as any).defaults && (api as any).defaults.headers) {
+          delete (api as any).defaults.headers.common.Authorization;
+        }
+      } catch (e) {}
 
-  // apply/remove the `dark` class and persist whenever isDark changes
-  useEffect(() => {
-    try {
-      if (isDark) {
-        document.documentElement.classList.add("dark");
-        localStorage.setItem("theme", "dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-        localStorage.setItem("theme", "light");
-      }
-    } catch {
-      // ignore
+      document.cookie = "accessToken=; path=/; max-age=0; SameSite=Lax;";
+    } catch (err) {
+      console.warn('logout error', err);
+    } finally {
+      router.replace("/login");
     }
-  }, [isDark]);
-
-  const handleLogout = () => {
-    try {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("user");
-      // remove cookie if you set it earlier (safe noop if none)
-      document.cookie = "accessToken=; path=/; max-age=0";
-    } catch {}
-    router.push("/login");
   };
+
+  const isDark = theme === 'dark';
 
   return (
     <header className="flex items-center justify-between gap-4 mb-6">
@@ -57,7 +49,7 @@ const Header: React.FC = () => {
 
       <div className="flex items-center gap-2">
         <button
-          onClick={() => setIsDark((s) => !s)}
+          onClick={() => toggle()}
           aria-label="Toggle theme"
           aria-pressed={isDark}
           className="px-3 py-2 rounded border text-sm transition-transform duration-150 hover:scale-105 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center"

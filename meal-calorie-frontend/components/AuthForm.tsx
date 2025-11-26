@@ -12,6 +12,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 import { Mail, Lock, LogIn } from "lucide-react";
 
+import { useAuthStore } from "@/stores/authStore";
+import api from "@/lib/api";
+
 type Props = {
   onSuccess?: (token: string | null, user: any | null) => void;
   defaultRedirect?: string | null;
@@ -29,6 +32,9 @@ export default function AuthForm({ onSuccess, defaultRedirect }: Props) {
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [rememberMe, setRememberMe] = useState(false);
+
+  // Zustand setter
+  const setAuth = useAuthStore((s) => s.setAuth);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
@@ -62,27 +68,44 @@ export default function AuthForm({ onSuccess, defaultRedirect }: Props) {
     setLoading(true);
     setFieldErrors({});
     try {
-      const base = process.env.NEXT_PUBLIC_API_BASE_URL || "";
-      const res = await axios.post(`${base}/auth/login`, form, {
-        headers: { Accept: "application/json" },
-        timeout: 15000,
-      });
+      const res = await api.post(`/auth/login`, form);
 
-      const token = res.data?.accessToken || res.data?.token || null;
-      const user = res.data?.user ?? null;
+      const token = res.data?.accessToken || res.data?.token || res.data?.data?.token || null;
+      const user = res.data?.user ?? res.data?.data?.user ?? null;
 
       if (token) {
-        localStorage.setItem("accessToken", token);
-        if (user) localStorage.setItem("user", JSON.stringify(user));
-        if (rememberMe) localStorage.setItem("rememberMe", "1");
-        else localStorage.removeItem("rememberMe");
+        try {
+          localStorage.setItem("accessToken", token);
+          if (user) localStorage.setItem("user", JSON.stringify(user));
+          if (rememberMe) localStorage.setItem("rememberMe", "1");
+          else localStorage.removeItem("rememberMe");
+        } catch (e) {
+          // ignore quota / private mode errors
+        }
+
+        try {
+          setAuth(token, user);
+          try {
+            const st = (useAuthStore as any).getState?.();
+            if (st?.markHydrated && typeof st.markHydrated === "function") {
+              st.markHydrated();
+            } else {
+              (useAuthStore as any).setState({ isHydrated: true });
+            }
+          } catch (e2) {
+            // ignore
+          }
+        } catch (e) {
+          console.warn("[AuthForm] failed to set auth in store:", e);
+        }
+      } else {
+        showError(null, "Login succeeded but server did not return a token.");
       }
 
       if (onSuccess) onSuccess(token, user);
 
-      // safe redirect
       const safe = redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//") ? redirectTo : "/dashboard";
-      router.push(safe);
+      router.replace(safe);
     } catch (err: any) {
       const resp = err?.response;
       const status = resp?.status ?? null;
@@ -122,7 +145,7 @@ export default function AuthForm({ onSuccess, defaultRedirect }: Props) {
             value={form.email}
             onChange={handleChange}
             required
-            className="pl-10"
+            className="pl-10 placeholder:text-slate-500 dark:placeholder:text-slate-300"
             style={{ backgroundColor: "rgba(255,255,255,0.6)" }}
           />
           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
@@ -141,7 +164,7 @@ export default function AuthForm({ onSuccess, defaultRedirect }: Props) {
             value={form.password}
             onChange={handleChange}
             required
-            className="pl-10"
+            className="pl-10 placeholder:text-slate-500 dark:placeholder:text-slate-300"
             style={{ backgroundColor: "rgba(255,255,255,0.6)" }}
           />
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
@@ -151,7 +174,7 @@ export default function AuthForm({ onSuccess, defaultRedirect }: Props) {
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Checkbox id="remember" checked={rememberMe} onCheckedChange={(v: any) => setRememberMe(Boolean(v))} />
+          <Checkbox id="remember" checked={rememberMe} onCheckedChange={(v: any) => setRememberMe(Boolean(v))} className="border-slate-500 dark:border-slate-300 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600" />
           <Label htmlFor="remember" className="text-sm">Remember me</Label>
         </div>
       </div>

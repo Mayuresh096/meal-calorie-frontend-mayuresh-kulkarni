@@ -7,8 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-
-const GET_CALORIE = `${process.env.NEXT_PUBLIC_API_BASE_URL}/get-calories`;
+import api from "@/lib/api";
 
 const SAMPLE_DISHES = [
   "Paneer Butter Masala",
@@ -28,7 +27,6 @@ export default function MealForm() {
 
   const setResult = useMealStore((s) => s.setResult);
   const setLoading = useMealStore((s) => s.setLoading);
-  const setError = useMealStore((s) => s.setError);
   const clearStore = useMealStore((s) => s.clear);
 
   useEffect(() => {
@@ -66,12 +64,10 @@ export default function MealForm() {
   };
 
   const onSearch = async () => {
-    setError(null);
     setResult(null);
 
     if (!dish.trim()) {
       const msg = "Please enter a dish name.";
-      setError({ status: 400, message: msg });
       toast.error(msg);
       return;
     }
@@ -79,7 +75,6 @@ export default function MealForm() {
     const servings = servingsStr === "" ? NaN : Number(servingsStr);
     if (Number.isNaN(servings) || servings < 0.1 || servings > 1000) {
       const msg = "Servings must be a positive number between 0.1 and 1000.";
-      setError({ status: 400, message: msg });
       toast.error(msg);
       return;
     }
@@ -88,23 +83,15 @@ export default function MealForm() {
 
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-      const res = await axios.post(
-        GET_CALORIE,
-        { dish_name: dish.trim(), servings },
-        {
-          headers: {
-            Accept: "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          timeout: 15000,
-        }
+      const res = await api.post(
+        '/get-calories',
+        { dish_name: dish.trim(), servings }
       );
 
       const body = res?.data ?? {};
 
       if (typeof body === "object" && ((body.message && /not found/i.test(body.message)) || (body.error && /not found/i.test(body.error)))) {
         const msg = body.message || body.error || "Dish not found";
-        setError({ status: 404, message: msg });
         showMappedErrorToast(404, msg);
         setResult(null);
         return;
@@ -119,12 +106,10 @@ export default function MealForm() {
       };
 
       setResult(normalized);
-      setError(null);
     } catch (err: any) {
       const resp = err?.response;
       const status = resp?.status ?? null;
       const serverMsg = resp?.data?.message || resp?.data?.error || err?.message || null;
-      setError({ status, message: serverMsg ?? "Network error" });
       showMappedErrorToast(status, serverMsg);
     } finally {
       setLoading(false);
